@@ -1,5 +1,8 @@
 # 🧭 GoHunt
 
+![Flutter CI](https://github.com/cosminqx/GoHunt-App/actions/workflows/flutter.yml/badge.svg)
+
+
 GoHunt este o aplicație mobilă și desktop interactivă, în care utilizatorii explorează orașul căutând indicii și scanând coduri pentru a câștiga puncte și vouchere reale. Proiectul este construit în Flutter, cu backend Firebase, și are ca scop promovarea turismului local și colaborarea cu afaceri din comunitate.
 
 ---
