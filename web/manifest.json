@@ -1,6 +1,6 @@
 {
-    "name": "gohunt",
-    "short_name": "gohunt",
+    "name": "gohunt_test",
+    "short_name": "gohunt_test",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
