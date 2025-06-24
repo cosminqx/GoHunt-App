@@ -34,7 +34,7 @@ GoHunt este o aplicație mobilă și desktop interactivă, în care utilizatorii
 
 📌 În prezent lucrăm la:
 - [x] Arhitectură inițială
-- [ ] Autentificare completă
+- [X] Autentificare completă
 - [ ] Sistem de indicii pas cu pas
 - [ ] Scanare coduri QR
 - [ ] Dashboard admin pentru profesori / sponsori

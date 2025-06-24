@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../auth_service.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +16,26 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   String? errorMessage;
+  bool isLoading = false;
+
+  Future<String?> _loginWithEmailOrUsername(String input, String password, AuthService authService) async {
+    String email = input.trim();
+    // Verifică dacă inputul este email
+    final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
+    if (!emailRegex.hasMatch(email)) {
+      // Dacă nu e email, caută email-ul asociat username-ului
+      final res = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: email)
+          .limit(1)
+          .get();
+      if (res.docs.isEmpty) {
+        return "Username not found";
+      }
+      email = res.docs.first['email'];
+    }
+    return await authService.login(email, password);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,20 +52,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Banner imagine
                 Container(
                   height: 180,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    image: const DecorationImage(
-                      image: NetworkImage(
-                        'https://lh3.googleusercontent.com/aida-public/AB6AXuC3ZOQuxR1rZiCIKeJUiNpY26L7UY5xVGJYD86NbULNEW82byUU5C0Px6dyXZnkhKkUzD_hwkcHLSY_2YtNSMSd2jDa8bGOagjx1utXYWdhmXG2PAcAw3rUijkaG08JU7A2ZE6byPjSDP_NiD7K93smZfFuEyUGhmx2grWygXhDJaMNRAjbR27ZIoITm8FXP8V-5Gxe6cdEoVMD3K-OHwILZuVwCJjMLzZJy2FGiFFOPdTnLdFi06rRn_D6BipiZLZPlCS_vvkATKQ',
-                      ),
-                      fit: BoxFit.cover,
-                    ),
+                  alignment: Alignment.center,
+                  child: Image.asset(
+                    'assets/gohunt_logo.png',
+                    height: 140,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 32),
                 // Username/email
                 Text(
-                  'Username',
+                  'Username or Email',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
@@ -56,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: emailController,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'Enter your username',
+                    hintText: 'Enter your username or email',
                     hintStyle: const TextStyle(color: Color(0xFF8ecdb7)),
                     filled: true,
                     fillColor: const Color(0xFF17352b),
@@ -147,9 +165,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     onPressed: () async {
                       final authService = Provider.of<AuthService>(context, listen: false);
-                      final error = await authService.login(
-                        emailController.text.trim(),
-                        passwordController.text.trim(),
+                      final error = await _loginWithEmailOrUsername(
+                        emailController.text,
+                        passwordController.text,
+                        authService,
                       );
                       if (!mounted) return;
                       if (error != null) {
@@ -164,6 +183,48 @@ class _LoginScreenState extends State<LoginScreen> {
                       }
                     },
                     child: const Text('Login'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Google Sign-In button
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        letterSpacing: 0.015,
+                      ),
+                    ),
+                    icon: Image.network(
+                      'https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png',
+                      height: 24,
+                      width: 24,
+                    ),
+                    label: const Text(
+                      'Sign in with Google',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    onPressed: () async {
+                      final authService = Provider.of<AuthService>(context, listen: false);
+                      final error = await authService.signInWithGoogle();
+                      if (!mounted) return;
+                      if (error != null) {
+                        setState(() {
+                          errorMessage = error;
+                        });
+                      } else {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => HomeScreen(clues: [])),
+                        );
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),

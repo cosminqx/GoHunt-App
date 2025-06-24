@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../auth_service.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -14,7 +16,11 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   String? errorMessage;
+  bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +55,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                Text(
+                  'Full Name',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: fullNameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Enter your full name',
+                    hintStyle: const TextStyle(color: Color(0xFF8ecdb7)),
+                    filled: true,
+                    fillColor: const Color(0xFF17352b),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Username',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: usernameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Choose a username',
+                    hintStyle: const TextStyle(color: Color(0xFF8ecdb7)),
+                    filled: true,
+                    fillColor: const Color(0xFF17352b),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 Text(
                   'Email',
                   style: TextStyle(
@@ -115,6 +187,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
                   ),
                 ),
+                const SizedBox(height: 20),
+                Text(
+                  'Confirm Password',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Confirm your password',
+                    hintStyle: const TextStyle(color: Color(0xFF8ecdb7)),
+                    filled: true,
+                    fillColor: const Color(0xFF17352b),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFF2f6a55)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
+                  ),
+                ),
                 if (errorMessage != null) ...[
                   const SizedBox(height: 10),
                   Text(
@@ -137,26 +243,132 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         letterSpacing: 0.015,
                       ),
                     ),
-                    onPressed: () async {
-                      final error = await authService.register(
-                        emailController.text.trim(),
-                        passwordController.text.trim(),
-                      );
-                      if (!mounted) return;
-                      if (error != null) {
-                        setState(() {
-                          errorMessage = error;
-                        });
-                      } else {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => HomeScreen(clues: []),
-                          ),
-                        );
-                      }
-                    },
-                    child: const Text('Register'),
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            setState(() {
+                              errorMessage = null;
+                              isLoading = true;
+                            });
+                            if (passwordController.text != confirmPasswordController.text) {
+                              setState(() {
+                                errorMessage = "Passwords do not match!";
+                                isLoading = false;
+                              });
+                              return;
+                            }
+                            final error = await authService.register(
+                              emailController.text.trim(),
+                              passwordController.text.trim(),
+                              fullNameController.text.trim(),
+                              usernameController.text.trim(),
+                            );
+                            if (!mounted) return;
+                            if (error != null) {
+                              setState(() {
+                                errorMessage = error;
+                                isLoading = false;
+                              });
+                            } else {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => HomeScreen(clues: []),
+                                ),
+                              );
+                            }
+                          },
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Register'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Register with Google button
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        letterSpacing: 0.015,
+                      ),
+                    ),
+                    icon: Image.network(
+                      'https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png',
+                      height: 24,
+                      width: 24,
+                    ),
+                    label: const Text(
+                      'Register with Google',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            setState(() {
+                              errorMessage = null;
+                              isLoading = true;
+                            });
+                            final result = await authService.signInWithGoogle();
+                            if (!mounted) return;
+                            if (result != null) {
+                              setState(() {
+                                errorMessage = result;
+                                isLoading = false;
+                              });
+                              return;
+                            }
+                            // După sign-in, verifică dacă există username, altfel generează unul și salvează datele suplimentare
+                            final user = authService.user;
+                            if (user == null) {
+                              setState(() {
+                                errorMessage = "Google sign-in failed!";
+                                isLoading = false;
+                              });
+                              return;
+                            }
+                            final firestore = FirebaseFirestore.instance;
+                            final userDoc = await firestore.collection('users').doc(user.uid).get();
+                            if (!userDoc.exists) {
+                              // Generează username unic
+                              String base = (user.displayName ?? "user").toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+                              String username = base;
+                              bool exists = true;
+                              while (exists) {
+                                final res = await firestore.collection('users').where('username', isEqualTo: username).get();
+                                if (res.docs.isEmpty) {
+                                  exists = false;
+                                } else {
+                                  String randomDigits = (Random().nextInt(9000) + 1000).toString();
+                                  username = "$base$randomDigits";
+                                }
+                              }
+                              // Salvează datele suplimentare în Firestore
+                              await firestore.collection('users').doc(user.uid).set({
+                                'uid': user.uid,
+                                'email': user.email,
+                                'fullName': user.displayName ?? '',
+                                'username': username,
+                                'createdAt': FieldValue.serverTimestamp(),
+                                'provider': 'google',
+                              });
+                            }
+                            setState(() {
+                              isLoading = false;
+                            });
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => HomeScreen(clues: []),
+                              ),
+                            );
+                          },
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -186,5 +398,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-// This screen allows users to register a new account.
-// It uses the AuthService to handle registration and displays any error messages.

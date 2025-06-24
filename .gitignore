@@ -18,11 +18,16 @@ local.properties
 .firebase/
 .firebase_*
 
+# Google Services config
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
 # MacOS
 .DS_Store
 
 # Logs
 *.log
+flutter_*.log
 
 # Generated files
 pubspec.lock
@@ -31,6 +36,14 @@ pubspec.lock
 *.swp
 *.tmp
 
-# Google Services config (optional: să nu urci pe GitHub)
-android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
+
+# Env files
+.env
