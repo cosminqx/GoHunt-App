@@ -22,6 +22,101 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? errorMessage;
   bool isLoading = false;
 
+  Future<void> _registerWithEmail(AuthService authService) async {
+    setState(() {
+      errorMessage = null;
+      isLoading = true;
+    });
+    if (passwordController.text != confirmPasswordController.text) {
+      setState(() {
+        errorMessage = "Passwords do not match!";
+        isLoading = false;
+      });
+      return;
+    }
+    final error = await authService.register(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+      fullNameController.text.trim(),
+      usernameController.text.trim(),
+    );
+    if (!mounted) return;
+    if (error != null) {
+      setState(() {
+        errorMessage = error;
+        isLoading = false;
+      });
+      return;
+    }
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(clues: []),
+      ),
+    );
+  }
+
+  Future<void> _registerWithGoogle(AuthService authService) async {
+    setState(() {
+      errorMessage = null;
+      isLoading = true;
+    });
+    final result = await authService.signInWithGoogle();
+    if (!mounted) return;
+    if (result != null) {
+      setState(() {
+        errorMessage = result;
+        isLoading = false;
+      });
+      return;
+    }
+    // După sign-in, verifică dacă există username, altfel generează unul și salvează datele suplimentare
+    final user = authService.user;
+    if (user == null) {
+      setState(() {
+        errorMessage = "Google sign-in failed!";
+        isLoading = false;
+      });
+      return;
+    }
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = await firestore.collection('users').doc(user.uid).get();
+    if (!userDoc.exists) {
+      // Generează username unic
+      String base = (user.displayName ?? "user").toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      String username = base;
+      bool exists = true;
+      while (exists) {
+        final res = await firestore.collection('users').where('username', isEqualTo: username).get();
+        if (res.docs.isEmpty) {
+          exists = false;
+        } else {
+          String randomDigits = (Random().nextInt(9000) + 1000).toString();
+          username = "$base$randomDigits";
+        }
+      }
+      // Salvează datele suplimentare în Firestore
+      await firestore.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'email': user.email,
+        'fullName': user.displayName ?? '',
+        'username': username,
+        'createdAt': FieldValue.serverTimestamp(),
+        'provider': 'google',
+      });
+    }
+    if (!mounted) return;
+    setState(() {
+      isLoading = false;
+    });
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(clues: []),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
@@ -246,37 +341,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: isLoading
                         ? null
                         : () async {
-                            setState(() {
-                              errorMessage = null;
-                              isLoading = true;
-                            });
-                            if (passwordController.text != confirmPasswordController.text) {
-                              setState(() {
-                                errorMessage = "Passwords do not match!";
-                                isLoading = false;
-                              });
-                              return;
-                            }
-                            final error = await authService.register(
-                              emailController.text.trim(),
-                              passwordController.text.trim(),
-                              fullNameController.text.trim(),
-                              usernameController.text.trim(),
-                            );
-                            if (!mounted) return;
-                            if (error != null) {
-                              setState(() {
-                                errorMessage = error;
-                                isLoading = false;
-                              });
-                            } else {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => HomeScreen(clues: []),
-                                ),
-                              );
-                            }
+                            await _registerWithEmail(authService);
                           },
                     child: isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
@@ -311,63 +376,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: isLoading
                         ? null
                         : () async {
-                            setState(() {
-                              errorMessage = null;
-                              isLoading = true;
-                            });
-                            final result = await authService.signInWithGoogle();
-                            if (!mounted) return;
-                            if (result != null) {
-                              setState(() {
-                                errorMessage = result;
-                                isLoading = false;
-                              });
-                              return;
-                            }
-                            // După sign-in, verifică dacă există username, altfel generează unul și salvează datele suplimentare
-                            final user = authService.user;
-                            if (user == null) {
-                              setState(() {
-                                errorMessage = "Google sign-in failed!";
-                                isLoading = false;
-                              });
-                              return;
-                            }
-                            final firestore = FirebaseFirestore.instance;
-                            final userDoc = await firestore.collection('users').doc(user.uid).get();
-                            if (!userDoc.exists) {
-                              // Generează username unic
-                              String base = (user.displayName ?? "user").toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-                              String username = base;
-                              bool exists = true;
-                              while (exists) {
-                                final res = await firestore.collection('users').where('username', isEqualTo: username).get();
-                                if (res.docs.isEmpty) {
-                                  exists = false;
-                                } else {
-                                  String randomDigits = (Random().nextInt(9000) + 1000).toString();
-                                  username = "$base$randomDigits";
-                                }
-                              }
-                              // Salvează datele suplimentare în Firestore
-                              await firestore.collection('users').doc(user.uid).set({
-                                'uid': user.uid,
-                                'email': user.email,
-                                'fullName': user.displayName ?? '',
-                                'username': username,
-                                'createdAt': FieldValue.serverTimestamp(),
-                                'provider': 'google',
-                              });
-                            }
-                            setState(() {
-                              isLoading = false;
-                            });
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => HomeScreen(clues: []),
-                              ),
-                            );
+                            await _registerWithGoogle(authService);
                           },
                   ),
                 ),
@@ -375,8 +384,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Center(
                   child: TextButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
+                      if (!mounted) return;
+                      Navigator.of(context).pushReplacement(
                         MaterialPageRoute(builder: (_) => const LoginScreen()),
                       );
                     },

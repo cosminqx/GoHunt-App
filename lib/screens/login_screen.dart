@@ -18,12 +18,11 @@ class _LoginScreenState extends State<LoginScreen> {
   String? errorMessage;
   bool isLoading = false;
 
-  Future<String?> _loginWithEmailOrUsername(String input, String password, AuthService authService) async {
+  Future<String?> _loginWithEmailOrUsername(
+      String input, String password, AuthService authService) async {
     String email = input.trim();
-    // Verifică dacă inputul este email
     final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
     if (!emailRegex.hasMatch(email)) {
-      // Dacă nu e email, caută email-ul asociat username-ului
       final res = await FirebaseFirestore.instance
           .collection('users')
           .where('username', isEqualTo: email)
@@ -35,6 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
       email = res.docs.first['email'];
     }
     return await authService.login(email, password);
+  }
+
+  void _goToHome() {
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => HomeScreen(clues: [])),
+    );
   }
 
   @override
@@ -175,12 +182,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           errorMessage = error;
                         });
-                      } else {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => HomeScreen(clues: [])),
-                        );
+                        return;
                       }
+                      _goToHome();
                     },
                     child: const Text('Login'),
                   ),
@@ -218,12 +222,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           errorMessage = error;
                         });
-                      } else {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => HomeScreen(clues: [])),
-                        );
+                        return;
                       }
+                      _goToHome();
                     },
                   ),
                 ),
@@ -232,6 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Center(
                   child: TextButton(
                     onPressed: () {
+                      if (!mounted) return;
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const RegisterScreen()),
