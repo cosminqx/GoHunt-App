@@ -63,6 +63,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '833497730250',
     projectId: 'gohunt-a6d73',
     storageBucket: 'gohunt-a6d73.firebasestorage.app',
+    androidClientId: '833497730250-p9eho2k4ggup3s60cjamslckcqmum59v.apps.googleusercontent.com',
+    iosClientId: '833497730250-b2rptmadaiah6296dsinm6q2fpubocpd.apps.googleusercontent.com',
     iosBundleId: 'com.example.gohunt',
   );
+
 }
